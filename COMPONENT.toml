@@ -3,12 +3,12 @@ name = "SigmaOS-omarchy-chromium"
 tier = 2
 stability = "scaffold"
 language = "rust"
-description = "omarchy-chromium component"
+description = "Omarchy chromium component for SigmaOS"
 upstream = []
 
 [contract]
 provides = ["component"]
-depends_on = []
+depends_on = ["SigmaOS-system"]
 
 [maturity]
 status = "Scaffold"
