@@ -12,5 +12,5 @@ depends_on = ["SigmaOS-system"]
 
 [maturity]
 status = "Implemented"
-test_evidence = "Compiles and passes AAA unit tests"
-next_milestone = "Hardware and runtime integration"
+test_evidence = "cargo test --offline: 7 lib + 1 integration pass; Chromium-family browser manager (PATH detect, profiles, launch args w/ privacy flags, default browser, incognito) + working CLI"
+next_milestone = "xsettings/portal default-browser integration"
