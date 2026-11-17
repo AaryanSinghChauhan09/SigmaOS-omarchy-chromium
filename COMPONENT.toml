@@ -12,5 +12,5 @@ depends_on = ["SigmaOS-system"]
 
 [maturity]
 status = "Implemented"
-test_evidence = "cargo test --offline: 7 lib + 1 integration pass; Chromium-family browser manager (PATH detect, profiles, launch args w/ privacy flags, default browser, incognito) + working CLI"
+test_evidence = "cargo test --offline: 7 lib + 1 integration pass; browser manager (PATH detect, profiles, launch flags, default) with JSON persistence of default+flags+profile prefs + working CLI"
 next_milestone = "xsettings/portal default-browser integration"

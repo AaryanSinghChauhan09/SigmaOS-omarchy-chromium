@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::path::{Path, PathBuf};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
 pub enum BrowserKind { Chromium, Chrome, Brave, Edge, Firefox, Other }
 impl BrowserKind {
     pub fn label(self) -> &'static str {
@@ -17,7 +17,7 @@ impl BrowserKind {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Browser {
     pub id: String,
     pub name: String,
@@ -27,7 +27,7 @@ pub struct Browser {
     pub default_profile: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Profile {
     pub name: String,          // "Default", "Profile 1", ...
     pub path: PathBuf,
@@ -157,6 +157,48 @@ impl OmarchyChromium {
             }
         }
         found
+    }
+
+    /// Persist default browser, extra flags, and per-browser default
+    /// profiles. Browser binaries/profiles are re-detected each run.
+    pub fn save_state(&self, path: &std::path::Path) -> Result<(), String> {
+        let browser_defaults: Vec<(String, String)> = self.browsers.values()
+            .map(|b| (b.id.clone(), b.default_profile.clone())).collect();
+        #[derive(serde::Serialize)]
+        struct Disk<'a> {
+            default_browser: Option<&'a str>,
+            extra_flags: &'a [String],
+            browser_defaults: Vec<(String, String)>,
+        }
+        let d = Disk { default_browser: self.default_browser.as_deref(),
+                       extra_flags: &self.extra_flags, browser_defaults };
+        let j = serde_json::to_string_pretty(&d).map_err(|e| e.to_string())?;
+        if let Some(p) = path.parent() { std::fs::create_dir_all(p).map_err(|e| e.to_string())?; }
+        std::fs::write(path, j).map_err(|e| e.to_string())
+    }
+
+    /// Restore persisted prefs onto already-registered (re-detected) browsers.
+    pub fn load_state(&mut self, path: &std::path::Path) {
+        #[derive(serde::Deserialize)]
+        struct Disk { default_browser: Option<String>, extra_flags: Vec<String>,
+                      browser_defaults: Vec<(String, String)> }
+        if let Ok(txt) = std::fs::read_to_string(path) {
+            if let Ok(d) = serde_json::from_str::<Disk>(&txt) {
+                if let Some(db) = d.default_browser { self.default_browser = Some(db); }
+                self.extra_flags = d.extra_flags;
+                for (id, prof) in d.browser_defaults {
+                    if let Some(b) = self.browsers.get_mut(&id) {
+                        if b.profiles.iter().any(|p| p.name == prof) { b.default_profile = prof; }
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn state_path() -> std::path::PathBuf {
+        if let Ok(p) = std::env::var("SIGMAOS_BROWSER_FILE") { return std::path::PathBuf::from(p); }
+        let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
+        std::path::PathBuf::from(home).join(".local/share/sigmaos/browser.json")
     }
 
     pub fn status_line(&self) -> String {
