@@ -3,7 +3,7 @@ name = "SigmaOS-omarchy-chromium"
 tier = 2
 stability = "beta"
 language = "rust"
-description = "Omarchy chromium component for SigmaOS"
+description = "Chromium browser integration manager"
 upstream = []
 
 [contract]
